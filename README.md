@@ -1,350 +1,384 @@
+-- Services
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local TextService = game:GetService("TextService")
 
-local localPlayer = Players.LocalPlayer
+-- Player references
+local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
--- Settings
-local lockKey = Enum.KeyCode.Q
-local defaultLockDistance = 1000
-local defaultSmoothness = 0.2
-local defaultPrediction = 0.5 -- 0 = no prediction, 1 = full prediction
-local defaultFOV = 70
-
--- State
-local lockedPlayer = nil
-local lockConnection = nil
-local isEnabled = true
-local currentLockDistance = defaultLockDistance
-local currentSmoothness = defaultSmoothness
-local currentPrediction = defaultPrediction
-local targetVelocity = Vector3.new(0, 0, 0)
-local lastTargetPosition = nil
-local lastUpdateTime = tick()
-
 -- Create main GUI
-local gui = Instance.new("ScreenGui")
-gui.Name = "dadasa"
-gui.ResetOnSpawn = false
-gui.Parent = localPlayer:WaitForChild("PlayerGui")
+local screenGui = Instance.new("ScreenGui")
+screenGui.ResetOnSpawn = false
+screenGui.Name = "AdvancedCamLockUI"
+screenGui.Parent = player:WaitForChild("PlayerGui")
 
--- Main frame
+-- Main container frame
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 320, 0, 250)
-mainFrame.Position = UDim2.new(0.5, -160, 0.5, -125)
-mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-mainFrame.BackgroundTransparency = 0.2
+mainFrame.Size = UDim2.new(0, 220, 0, 160)
+mainFrame.Position = UDim2.new(0.02, 0, 0.7, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+mainFrame.BackgroundTransparency = 0.4
 mainFrame.Active = true
 mainFrame.Draggable = true
 
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 8)
-corner.Parent = mainFrame
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 8)
+mainCorner.Parent = mainFrame
 
--- Title bar
-local titleBar = Instance.new("Frame")
-titleBar.Name = "TitleBar"
-titleBar.Size = UDim2.new(1, 0, 0, 30)
-titleBar.Position = UDim2.new(0, 0, 0, 0)
-titleBar.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
-titleBar.Active = true
+local mainStroke = Instance.new("UIStroke")
+mainStroke.Color = Color3.fromRGB(80, 80, 80)
+mainStroke.Thickness = 1
+mainStroke.Parent = mainFrame
 
-local titleCorner = Instance.new("UICorner")
-titleCorner.CornerRadius = UDim.new(0, 8)
-titleCorner.Parent = titleBar
-
+-- Title label
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Name = "TitleLabel"
-titleLabel.Size = UDim2.new(1, -40, 1, 0)
-titleLabel.Position = UDim2.new(0, 10, 0, 0)
-titleLabel.Text = "dadasa"
-titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Size = UDim2.new(1, 0, 0, 30)
+titleLabel.Position = UDim2.new(0, 0, 0, 0)
+titleLabel.Text = "ADVANCED CAM LOCK"
+titleLabel.TextColor3 = Color3.new(1, 1, 1)
+titleLabel.TextSize = 14
+titleLabel.Font = Enum.Font.GothamBold
 titleLabel.BackgroundTransparency = 1
-titleLabel.Parent = titleBar
+titleLabel.Parent = mainFrame
 
--- Close button
-local closeButton = Instance.new("TextButton")
-closeButton.Name = "CloseButton"
-closeButton.Size = UDim2.new(0, 30, 0, 30)
-closeButton.Position = UDim2.new(1, -30, 0, 0)
-closeButton.Text = "X"
-closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-closeButton.Parent = titleBar
+-- Lock button
+local lockButton = Instance.new("TextButton")
+lockButton.Name = "LockButton"
+lockButton.Size = UDim2.new(0.9, 0, 0, 35)
+lockButton.Position = UDim2.new(0.05, 0, 0.25, 0)
+lockButton.Text = "LOCK: OFF"
+lockButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+lockButton.TextColor3 = Color3.new(1, 1, 1)
+lockButton.TextSize = 13
 
-local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(0, 8)
-closeCorner.Parent = closeButton
+local lockCorner = Instance.new("UICorner")
+lockCorner.CornerRadius = UDim.new(0, 6)
+lockCorner.Parent = lockButton
 
--- Toggle button
-local toggleButton = Instance.new("TextButton")
-toggleButton.Name = "ToggleButton"
-toggleButton.Size = UDim2.new(0.9, 0, 0, 40)
-toggleButton.Position = UDim2.new(0.05, 0, 0.15, 0)
-toggleButton.Text = "ENABLE LOCK"
-toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-toggleButton.BackgroundColor3 = Color3.fromRGB(80, 180, 80)
-toggleButton.Parent = mainFrame
+local lockStroke = Instance.new("UIStroke")
+lockStroke.Color = Color3.fromRGB(100, 100, 100)
+lockStroke.Thickness = 1
+lockStroke.Parent = lockButton
+lockButton.Parent = mainFrame
 
-local toggleCorner = Instance.new("UICorner")
-toggleCorner.CornerRadius = UDim.new(0, 6)
-toggleCorner.Parent = toggleButton
-
--- Settings panel
+-- Settings frame
 local settingsFrame = Instance.new("Frame")
 settingsFrame.Name = "SettingsFrame"
-settingsFrame.Size = UDim2.new(0.9, 0, 0, 140)
-settingsFrame.Position = UDim2.new(0.05, 0, 0.35, 0)
+settingsFrame.Size = UDim2.new(0.9, 0, 0, 60)
+settingsFrame.Position = UDim2.new(0.05, 0, 0.55, 0)
 settingsFrame.BackgroundTransparency = 1
 settingsFrame.Parent = mainFrame
-
--- Distance slider
-local distanceLabel = Instance.new("TextLabel")
-distanceLabel.Name = "DistanceLabel"
-distanceLabel.Size = UDim2.new(1, 0, 0, 20)
-distanceLabel.Position = UDim2.new(0, 0, 0, 0)
-distanceLabel.Text = "Lock Distance: " .. defaultLockDistance
-distanceLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-distanceLabel.TextXAlignment = Enum.TextXAlignment.Left
-distanceLabel.BackgroundTransparency = 1
-distanceLabel.Parent = settingsFrame
-
-local distanceSlider = Instance.new("TextBox")
-distanceSlider.Name = "DistanceSlider"
-distanceSlider.Size = UDim2.new(1, 0, 0, 20)
-distanceSlider.Position = UDim2.new(0, 0, 0, 20)
-distanceSlider.Text = tostring(defaultLockDistance)
-distanceSlider.PlaceholderText = "Enter lock distance"
-distanceSlider.TextColor3 = Color3.fromRGB(0, 0, 0)
-distanceSlider.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
-distanceSlider.Parent = settingsFrame
 
 -- Smoothness slider
 local smoothnessLabel = Instance.new("TextLabel")
 smoothnessLabel.Name = "SmoothnessLabel"
-smoothnessLabel.Size = UDim2.new(1, 0, 0, 20)
-smoothnessLabel.Position = UDim2.new(0, 0, 0, 45)
-smoothnessLabel.Text = "Smoothness: " .. string.format("%.2f", defaultSmoothness)
-smoothnessLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+smoothnessLabel.Size = UDim2.new(0.4, 0, 0, 15)
+smoothnessLabel.Position = UDim2.new(0, 0, 0, 0)
+smoothnessLabel.Text = "Smoothness: 0.3"
+smoothnessLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8)
+smoothnessLabel.TextSize = 11
+smoothnessLabel.Font = Enum.Font.Gotham
 smoothnessLabel.TextXAlignment = Enum.TextXAlignment.Left
 smoothnessLabel.BackgroundTransparency = 1
 smoothnessLabel.Parent = settingsFrame
 
-local smoothnessSlider = Instance.new("TextBox")
+local smoothnessSlider = Instance.new("Frame")
 smoothnessSlider.Name = "SmoothnessSlider"
-smoothnessSlider.Size = UDim2.new(1, 0, 0, 20)
-smoothnessSlider.Position = UDim2.new(0, 0, 0, 65)
-smoothnessSlider.Text = string.format("%.2f", defaultSmoothness)
-smoothnessSlider.PlaceholderText = "Enter smoothness (0-1)"
-smoothnessSlider.TextColor3 = Color3.fromRGB(0, 0, 0)
-smoothnessSlider.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+smoothnessSlider.Size = UDim2.new(1, 0, 0, 5)
+smoothnessSlider.Position = UDim2.new(0, 0, 0, 18)
+smoothnessSlider.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+
+local smoothnessFill = Instance.new("Frame")
+smoothnessFill.Name = "Fill"
+smoothnessFill.Size = UDim2.new(0.3, 0, 1, 0)
+smoothnessFill.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+smoothnessFill.Parent = smoothnessSlider
+
+local smoothnessCorner = Instance.new("UICorner")
+smoothnessCorner.CornerRadius = UDim.new(1, 0)
+smoothnessCorner.Parent = smoothnessSlider
 smoothnessSlider.Parent = settingsFrame
 
--- Prediction slider
+-- Jump offset slider
+local jumpOffsetLabel = Instance.new("TextLabel")
+jumpOffsetLabel.Name = "JumpOffsetLabel"
+jumpOffsetLabel.Size = UDim2.new(0.4, 0, 0, 15)
+jumpOffsetLabel.Position = UDim2.new(0, 0, 0, 30)
+jumpOffsetLabel.Text = "Jump Offset: 1.5"
+jumpOffsetLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8)
+jumpOffsetLabel.TextSize = 11
+jumpOffsetLabel.Font = Enum.Font.Gotham
+jumpOffsetLabel.TextXAlignment = Enum.TextXAlignment.Left
+jumpOffsetLabel.BackgroundTransparency = 1
+jumpOffsetLabel.Parent = settingsFrame
+
+local jumpOffsetSlider = Instance.new("Frame")
+jumpOffsetSlider.Name = "JumpOffsetSlider"
+jumpOffsetSlider.Size = UDim2.new(1, 0, 0, 5)
+jumpOffsetSlider.Position = UDim2.new(0, 0, 0, 48)
+jumpOffsetSlider.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+
+local jumpOffsetFill = Instance.new("Frame")
+jumpOffsetFill.Name = "Fill"
+jumpOffsetFill.Size = UDim2.new(0.5, 0, 1, 0)
+jumpOffsetFill.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+jumpOffsetFill.Parent = jumpOffsetSlider
+
+local jumpOffsetCorner = Instance.new("UICorner")
+jumpOffsetCorner.CornerRadius = UDim.new(1, 0)
+jumpOffsetCorner.Parent = jumpOffsetSlider
+jumpOffsetSlider.Parent = settingsFrame
+
+-- Prediction display
+local predictionFrame = Instance.new("Frame")
+predictionFrame.Name = "PredictionFrame"
+predictionFrame.Size = UDim2.new(0, 100, 0, 20)
+predictionFrame.Position = UDim2.new(0.5, -50, 0.85, 0)
+predictionFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+predictionFrame.BackgroundTransparency = 0.5
+
+local predictionCorner = Instance.new("UICorner")
+predictionCorner.CornerRadius = UDim.new(0, 4)
+predictionCorner.Parent = predictionFrame
+
 local predictionLabel = Instance.new("TextLabel")
 predictionLabel.Name = "PredictionLabel"
-predictionLabel.Size = UDim2.new(1, 0, 0, 20)
-predictionLabel.Position = UDim2.new(0, 0, 0, 90)
-predictionLabel.Text = "Prediction: " .. string.format("%.2f", defaultPrediction)
-predictionLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-predictionLabel.TextXAlignment = Enum.TextXAlignment.Left
+predictionLabel.Size = UDim2.new(1, 0, 1, 0)
+predictionLabel.Text = "PREDICTION: 0ms"
+predictionLabel.TextColor3 = Color3.new(1, 1, 1)
+predictionLabel.TextSize = 12
+predictionLabel.Font = Enum.Font.GothamBold
 predictionLabel.BackgroundTransparency = 1
-predictionLabel.Parent = settingsFrame
+predictionLabel.Parent = predictionFrame
+predictionFrame.Parent = screenGui
 
-local predictionSlider = Instance.new("TextBox")
-predictionSlider.Name = "PredictionSlider"
-predictionSlider.Size = UDim2.new(1, 0, 0, 20)
-predictionSlider.Position = UDim2.new(0, 0, 0, 110)
-predictionSlider.Text = string.format("%.2f", defaultPrediction)
-predictionSlider.PlaceholderText = "Enter prediction (0-1)"
-predictionSlider.TextColor3 = Color3.fromRGB(0, 0, 0)
-predictionSlider.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
-predictionSlider.Parent = settingsFrame
+mainFrame.Parent = screenGui
 
--- Lock indicator
-local lockIndicator = Instance.new("Frame")
-lockIndicator.Name = "LockIndicator"
-lockIndicator.Size = UDim2.new(0, 20, 0, 20)
-lockIndicator.Position = UDim2.new(0.5, -10, 0.5, -10)
-lockIndicator.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-lockIndicator.BackgroundTransparency = 0.7
-lockIndicator.Visible = false
-lockIndicator.ZIndex = 10
+-- Lock system variables
+local lockedPlayer = nil
+local isLocked = false
+local lockRange = 2000
+local smoothness = 0.3
+local jumpOffset = 1.5
+local predictionHistory = {}
+local maxPredictionHistory = 10
 
-local indicatorCorner = Instance.new("UICorner")
-indicatorCorner.CornerRadius = UDim.new(1, 0)
-indicatorCorner.Parent = lockIndicator
-
-lockIndicator.Parent = gui
-
--- Parent all elements
-titleBar.Parent = mainFrame
-mainFrame.Parent = gui
-
--- Calculate target velocity for prediction
-local function calculateVelocity(currentPosition)
-    local now = tick()
-    local deltaTime = now - lastUpdateTime
+-- Velocity prediction function
+local function predictPosition(targetRoot, dt)
+    if not targetRoot then return nil end
     
-    if lastTargetPosition and deltaTime > 0 then
-        targetVelocity = (currentPosition - lastTargetPosition) / deltaTime
-    else
-        targetVelocity = Vector3.new(0, 0, 0)
-    end
+    -- Get current velocity
+    local velocity = targetRoot.AssemblyLinearVelocity
     
-    lastTargetPosition = currentPosition
-    lastUpdateTime = now
-    return targetVelocity
+    -- Simple prediction: position + velocity * time
+    return targetRoot.Position + (velocity * dt)
 end
 
--- Find target function with prediction
-local function findTarget()
-    if not isEnabled then return nil end
+-- Enhanced target selection with prediction
+local function findBestTarget()
+    if not player.Character then return nil end
+    local root = player.Character:FindFirstChild("HumanoidRootPart")
+    if not root then return nil end
     
-    local closestPlayer = nil
-    local closestAngle = math.rad(5) -- 5 degree cone
+    local bestTarget = nil
+    local bestScore = -math.huge
     
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= localPlayer and player.Character then
-            local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
-            if humanoidRootPart then
-                -- Calculate predicted position
-                local velocity = humanoidRootPart.AssemblyLinearVelocity
-                local predictedPosition = humanoidRootPart.Position + (velocity * currentPrediction * 0.5)
-                
-                local direction = (predictedPosition - camera.CFrame.Position).Unit
-                local angle = math.acos(camera.CFrame.LookVector:Dot(direction))
-                
-                if angle < closestAngle then
-                    local distance = (humanoidRootPart.Position - camera.CFrame.Position).Magnitude
-                    if distance <= currentLockDistance then
-                        closestAngle = angle
-                        closestPlayer = player
+    for _, otherPlayer in ipairs(Players:GetPlayers()) do
+        if otherPlayer ~= player and otherPlayer.Character then
+            local targetRoot = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
+            local humanoid = otherPlayer.Character:FindFirstChildOfClass("Humanoid")
+            
+            if targetRoot and humanoid then
+                local distance = (targetRoot.Position - root.Position).Magnitude
+                if distance <= lockRange then
+                    -- Calculate direction to target
+                    local direction = (targetRoot.Position - root.Position).Unit
+                    
+                    -- Calculate angle from camera view
+                    local viewAngle = math.deg(math.acos(camera.CFrame.LookVector:Dot(direction)))
+                    
+                    -- Calculate score (prioritize targets in center of screen and closer)
+                    local score = (1 - viewAngle/180) * 0.6 + (1 - distance/lockRange) * 0.4
+                    
+                    -- Slight bonus if target is moving
+                    if targetRoot.AssemblyLinearVelocity.Magnitude > 5 then
+                        score = score * 1.1
+                    end
+                    
+                    if score > bestScore then
+                        bestScore = score
+                        bestTarget = otherPlayer
                     end
                 end
             end
         end
     end
     
-    return closestPlayer
+    return bestTarget
 end
 
--- Camera lock function with prediction
-local function updateCameraLock()
-    if lockedPlayer and lockedPlayer.Character then
-        local humanoidRootPart = lockedPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if humanoidRootPart then
-            -- Calculate predicted position
-            local velocity = humanoidRootPart.AssemblyLinearVelocity
-            local predictedPosition = humanoidRootPart.Position + (velocity * currentPrediction * 0.3)
-            
-            calculateVelocity(humanoidRootPart.Position)
-            
-            local currentCFrame = camera.CFrame
-            local targetPosition = predictedPosition
-            
-            -- Smooth transition
-            local newLookVector = (targetPosition - currentCFrame.Position).Unit
-            local smoothedLookVector = currentCFrame.LookVector:Lerp(newLookVector, currentSmoothness)
-            
-            camera.CFrame = CFrame.new(currentCFrame.Position, currentCFrame.Position + smoothedLookVector)
-            return true
-        end
+-- Smooth camera lock with prediction and jump offset
+local function updateCamLock(dt)
+    if not isLocked or not lockedPlayer or not lockedPlayer.Character then return end
+    
+    local targetRoot = lockedPlayer.Character:FindFirstChild("HumanoidRootPart")
+    local humanoid = lockedPlayer.Character:FindFirstChildOfClass("Humanoid")
+    if not targetRoot or not humanoid then return end
+    
+    -- Calculate predicted position
+    local predictedPosition = predictPosition(targetRoot, dt)
+    if not predictedPosition then return end
+    
+    -- Apply jump offset (move camera up when target jumps)
+    local verticalOffset = 0
+    if humanoid.Jump then
+        verticalOffset = jumpOffset
     end
-    return false
+    
+    predictedPosition = predictedPosition + Vector3.new(0, verticalOffset, 0)
+    
+    -- Smooth camera movement
+    local currentCFrame = camera.CFrame
+    local currentPosition = currentCFrame.Position
+    local desiredLookVector = (predictedPosition - currentPosition).Unit
+    
+    -- Use spherical linear interpolation for smoother rotation
+    local newLookVector = currentCFrame.LookVector:Lerp(desiredLookVector, smoothness)
+    
+    -- Update camera
+    camera.CFrame = CFrame.new(currentPosition, currentPosition + newLookVector)
+    
+    -- Update prediction display
+    table.insert(predictionHistory, dt)
+    if #predictionHistory > maxPredictionHistory then
+        table.remove(predictionHistory, 1)
+    end
+    
+    local avgPrediction = 0
+    for _, val in ipairs(predictionHistory) do
+        avgPrediction = avgPrediction + val
+    end
+    avgPrediction = avgPrediction / #predictionHistory
+    
+    predictionLabel.Text = string.format("PREDICTION: %.1fms", avgPrediction * 1000)
 end
 
--- Toggle lock system
-local function toggleLockSystem()
-    if lockConnection then
-        lockConnection:Disconnect()
-        lockConnection = nil
-        lockedPlayer = nil
-        lockIndicator.Visible = false
-        toggleButton.Text = "ENABLE LOCK"
-        toggleButton.BackgroundColor3 = Color3.fromRGB(80, 180, 80)
+-- Update UI function
+local function updateUI()
+    if isLocked and lockedPlayer then
+        lockButton.Text = "LOCK: "..string.sub(lockedPlayer.Name, 1, 12)
+        lockButton.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+        lockStroke.Color = Color3.fromRGB(255, 80, 80)
+        
+        -- Pulse effect
+        local tweenInfo = TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
+        local tween = TweenService:Create(lockStroke, tweenInfo, {Thickness = 2})
+        tween:Play()
     else
-        lockedPlayer = findTarget()
+        lockButton.Text = "LOCK: OFF"
+        lockButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        lockStroke.Color = Color3.fromRGB(100, 100, 100)
+        lockStroke.Thickness = 1
+    end
+end
+
+-- Slider interaction
+local function setupSlider(slider, fill, label, minValue, maxValue, currentValue, callback)
+    local dragging = false
+    
+    slider.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+        end
+    end)
+    
+    slider.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local mousePos = UserInputService:GetMouseLocation()
+            local sliderPos = slider.AbsolutePosition
+            local sliderSize = slider.AbsoluteSize
+            
+            local relativeX = math.clamp((mousePos.X - sliderPos.X) / sliderSize.X, 0, 1)
+            local value = minValue + (maxValue - minValue) * relativeX
+            
+            fill.Size = UDim2.new(relativeX, 0, 1, 0)
+            callback(value)
+            
+            if label then
+                label.Text = string.format("%s: %.1f", label.Text:match("([^:]+)"), value)
+            end
+        end
+    end)
+    
+    -- Initialize
+    local initialRatio = (currentValue - minValue) / (maxValue - minValue)
+    fill.Size = UDim2.new(initialRatio, 0, 1, 0)
+end
+
+-- Setup sliders
+setupSlider(
+    smoothnessSlider,
+    smoothnessFill,
+    smoothnessLabel,
+    0.1, -- min
+    0.9, -- max
+    smoothness, -- current
+    function(value) smoothness = value end
+)
+
+setupSlider(
+    jumpOffsetSlider,
+    jumpOffsetFill,
+    jumpOffsetLabel,
+    0.5, -- min
+    3.0, -- max
+    jumpOffset, -- current
+    function(value) jumpOffset = value end
+)
+
+-- Toggle lock
+lockButton.MouseButton1Click:Connect(function()
+    isLocked = not isLocked
+    
+    if isLocked then
+        lockedPlayer = findBestTarget()
         if lockedPlayer then
-            lockIndicator.Visible = true
-            toggleButton.Text = "DISABLE LOCK"
-            toggleButton.BackgroundColor3 = Color3.fromRGB(180, 80, 80)
-            
-            lockConnection = RunService.RenderStepped:Connect(function()
-                if not updateCameraLock() then
-                    toggleLockSystem() -- Target lost
-                end
-            end)
+            predictionHistory = {}
+            RunService:BindToRenderStep("CamLockUpdate", Enum.RenderPriority.Camera.Value + 1, updateCamLock)
+        else
+            isLocked = false
         end
-    end
-end
-
--- Toggle enabled state
-local function toggleEnabled()
-    isEnabled = not isEnabled
-    if isEnabled then
-        toggleButton.Text = "ENABLE CAMERA LOCK"
-        toggleButton.BackgroundColor3 = Color3.fromRGB(80, 180, 80)
     else
-        toggleButton.Text = "DISABLE CAMERA LOCK"
-        toggleButton.BackgroundColor3 = Color3.fromRGB(180, 80, 80)
-        if lockConnection then
-            toggleLockSystem()
-        end
+        RunService:UnbindFromRenderStep("CamLockUpdate")
     end
-end
-
--- UI Events
-closeButton.MouseButton1Click:Connect(function()
-    gui:Destroy()
+    
+    updateUI()
 end)
 
-toggleButton.MouseButton1Click:Connect(toggleEnabled)
-
-distanceSlider.FocusLost:Connect(function()
-    local num = tonumber(distanceSlider.Text)
-    if num and num > 0 then
-        currentLockDistance = num
-        distanceLabel.Text = "Lock Distance: " .. math.floor(num)
-    else
-        distanceSlider.Text = tostring(currentLockDistance)
+-- Cleanup when character changes
+player.CharacterAdded:Connect(function()
+    if isLocked then
+        lockedPlayer = findBestTarget()
+        updateUI()
     end
 end)
 
-smoothnessSlider.FocusLost:Connect(function()
-    local num = tonumber(smoothnessSlider.Text)
-    if num and num >= 0 and num <= 1 then
-        currentSmoothness = num
-        smoothnessLabel.Text = "Smoothness: " .. string.format("%.2f", num)
-    else
-        smoothnessSlider.Text = string.format("%.2f", currentSmoothness)
+player.CharacterRemoving:Connect(function()
+    if isLocked then
+        RunService:UnbindFromRenderStep("CamLockUpdate")
     end
 end)
 
-predictionSlider.FocusLost:Connect(function()
-    local num = tonumber(predictionSlider.Text)
-    if num and num >= 0 and num <= 1 then
-        currentPrediction = num
-        predictionLabel.Text = "Prediction: " .. string.format("%.2f", num)
-    else
-        predictionSlider.Text = string.format("%.2f", currentPrediction)
-    end
-end)
-
--- Keybind
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if not gameProcessed and input.KeyCode == lockKey and isEnabled then
-        toggleLockSystem()
-    end
-end)
-
--- Cleanup
-localPlayer.CharacterAdded:Connect(function()
-    if lockConnection then
-        toggleLockSystem() -- Reset when local player respawns
-    end
-end)
+-- Initial UI update
+updateUI()
