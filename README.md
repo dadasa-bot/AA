@@ -11,8 +11,8 @@ local camera = workspace.CurrentCamera
 
 -- Create main GUI
 local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "MobileCamLockUI"
 screenGui.ResetOnSpawn = false
-screenGui.Name = "AdvancedCamLockUI"
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
 -- Main container frame
@@ -39,22 +39,23 @@ local titleLabel = Instance.new("TextLabel")
 titleLabel.Name = "TitleLabel"
 titleLabel.Size = UDim2.new(1, 0, 0, 30)
 titleLabel.Position = UDim2.new(0, 0, 0, 0)
-titleLabel.Text = "ADVANCED CAM LOCK"
+titleLabel.Text = "MOBILE CAM LOCK"
 titleLabel.TextColor3 = Color3.new(1, 1, 1)
 titleLabel.TextSize = 14
 titleLabel.Font = Enum.Font.GothamBold
 titleLabel.BackgroundTransparency = 1
 titleLabel.Parent = mainFrame
 
--- Lock button
+-- Lock button (larger for mobile)
 local lockButton = Instance.new("TextButton")
 lockButton.Name = "LockButton"
-lockButton.Size = UDim2.new(0.9, 0, 0, 35)
+lockButton.Size = UDim2.new(0.9, 0, 0, 45) -- Bigger for touch
 lockButton.Position = UDim2.new(0.05, 0, 0.25, 0)
 lockButton.Text = "LOCK: OFF"
 lockButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 lockButton.TextColor3 = Color3.new(1, 1, 1)
-lockButton.TextSize = 13
+lockButton.TextSize = 14
+lockButton.TextWrapped = true
 
 local lockCorner = Instance.new("UICorner")
 lockCorner.CornerRadius = UDim.new(0, 6)
@@ -69,29 +70,31 @@ lockButton.Parent = mainFrame
 -- Settings frame
 local settingsFrame = Instance.new("Frame")
 settingsFrame.Name = "SettingsFrame"
-settingsFrame.Size = UDim2.new(0.9, 0, 0, 60)
+settingsFrame.Size = UDim2.new(0.9, 0, 0, 70) -- Taller for mobile
 settingsFrame.Position = UDim2.new(0.05, 0, 0.55, 0)
 settingsFrame.BackgroundTransparency = 1
 settingsFrame.Parent = mainFrame
 
--- Smoothness slider
+-- Smoothness slider (mobile compatible)
 local smoothnessLabel = Instance.new("TextLabel")
 smoothnessLabel.Name = "SmoothnessLabel"
-smoothnessLabel.Size = UDim2.new(0.4, 0, 0, 15)
+smoothnessLabel.Size = UDim2.new(0.4, 0, 0, 20) -- Taller for touch
 smoothnessLabel.Position = UDim2.new(0, 0, 0, 0)
 smoothnessLabel.Text = "Smoothness: 0.3"
 smoothnessLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8)
-smoothnessLabel.TextSize = 11
+smoothnessLabel.TextSize = 12
 smoothnessLabel.Font = Enum.Font.Gotham
 smoothnessLabel.TextXAlignment = Enum.TextXAlignment.Left
 smoothnessLabel.BackgroundTransparency = 1
 smoothnessLabel.Parent = settingsFrame
 
-local smoothnessSlider = Instance.new("Frame")
+local smoothnessSlider = Instance.new("TextButton") -- Using TextButton for better touch
 smoothnessSlider.Name = "SmoothnessSlider"
-smoothnessSlider.Size = UDim2.new(1, 0, 0, 5)
-smoothnessSlider.Position = UDim2.new(0, 0, 0, 18)
+smoothnessSlider.Size = UDim2.new(1, 0, 0, 15) -- Taller for touch
+smoothnessSlider.Position = UDim2.new(0, 0, 0, 22)
 smoothnessSlider.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+smoothnessSlider.Text = ""
+smoothnessSlider.AutoButtonColor = false
 
 local smoothnessFill = Instance.new("Frame")
 smoothnessFill.Name = "Fill"
@@ -104,24 +107,26 @@ smoothnessCorner.CornerRadius = UDim.new(1, 0)
 smoothnessCorner.Parent = smoothnessSlider
 smoothnessSlider.Parent = settingsFrame
 
--- Jump offset slider
+-- Jump offset slider (mobile compatible)
 local jumpOffsetLabel = Instance.new("TextLabel")
 jumpOffsetLabel.Name = "JumpOffsetLabel"
-jumpOffsetLabel.Size = UDim2.new(0.4, 0, 0, 15)
-jumpOffsetLabel.Position = UDim2.new(0, 0, 0, 30)
+jumpOffsetLabel.Size = UDim2.new(0.4, 0, 0, 20) -- Taller for touch
+jumpOffsetLabel.Position = UDim2.new(0, 0, 0, 40)
 jumpOffsetLabel.Text = "Jump Offset: 1.5"
 jumpOffsetLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8)
-jumpOffsetLabel.TextSize = 11
+jumpOffsetLabel.TextSize = 12
 jumpOffsetLabel.Font = Enum.Font.Gotham
 jumpOffsetLabel.TextXAlignment = Enum.TextXAlignment.Left
 jumpOffsetLabel.BackgroundTransparency = 1
 jumpOffsetLabel.Parent = settingsFrame
 
-local jumpOffsetSlider = Instance.new("Frame")
+local jumpOffsetSlider = Instance.new("TextButton") -- Using TextButton for better touch
 jumpOffsetSlider.Name = "JumpOffsetSlider"
-jumpOffsetSlider.Size = UDim2.new(1, 0, 0, 5)
-jumpOffsetSlider.Position = UDim2.new(0, 0, 0, 48)
+jumpOffsetSlider.Size = UDim2.new(1, 0, 0, 15) -- Taller for touch
+jumpOffsetSlider.Position = UDim2.new(0, 0, 0, 62)
 jumpOffsetSlider.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+jumpOffsetSlider.Text = ""
+jumpOffsetSlider.AutoButtonColor = false
 
 local jumpOffsetFill = Instance.new("Frame")
 jumpOffsetFill.Name = "Fill"
@@ -137,8 +142,8 @@ jumpOffsetSlider.Parent = settingsFrame
 -- Prediction display
 local predictionFrame = Instance.new("Frame")
 predictionFrame.Name = "PredictionFrame"
-predictionFrame.Size = UDim2.new(0, 100, 0, 20)
-predictionFrame.Position = UDim2.new(0.5, -50, 0.85, 0)
+predictionFrame.Size = UDim2.new(0, 120, 0, 25) -- Larger for mobile
+predictionFrame.Position = UDim2.new(0.5, -60, 0.85, 0)
 predictionFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 predictionFrame.BackgroundTransparency = 0.5
 
@@ -167,6 +172,10 @@ local smoothness = 0.3
 local jumpOffset = 1.5
 local predictionHistory = {}
 local maxPredictionHistory = 10
+
+-- Mobile detection
+local isMobile = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
+local touchInputs = {}
 
 -- Velocity prediction function
 local function predictPosition(targetRoot, dt)
@@ -287,47 +296,77 @@ local function updateUI()
     end
 end
 
--- Slider interaction
-local function setupSlider(slider, fill, label, minValue, maxValue, currentValue, callback)
+-- Mobile-compatible slider function
+local function setupMobileSlider(slider, fill, label, minValue, maxValue, currentValue, callback)
     local dragging = false
+    local touchId = nil
     
-    slider.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-        end
-    end)
-    
-    slider.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
-    end)
-    
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local mousePos = UserInputService:GetMouseLocation()
-            local sliderPos = slider.AbsolutePosition
-            local sliderSize = slider.AbsoluteSize
+    -- Mouse/touch input handling
+    local function handleInput(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or 
+           input.UserInputType == Enum.UserInputType.Touch then
             
-            local relativeX = math.clamp((mousePos.X - sliderPos.X) / sliderSize.X, 0, 1)
-            local value = minValue + (maxValue - minValue) * relativeX
+            if input.UserInputState == Enum.UserInputState.Begin then
+                dragging = true
+                if input.UserInputType == Enum.UserInputType.Touch then
+                    touchId = input
+                end
+            elseif input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+                touchId = nil
+            end
             
-            fill.Size = UDim2.new(relativeX, 0, 1, 0)
-            callback(value)
-            
-            if label then
-                label.Text = string.format("%s: %.1f", label.Text:match("([^:]+)"), value)
+            if dragging then
+                local sliderPos = slider.AbsolutePosition
+                local sliderSize = slider.AbsoluteSize
+                
+                -- Get correct input position based on input type
+                local inputPos
+                if input.UserInputType == Enum.UserInputType.Touch then
+                    inputPos = input.Position
+                else
+                    inputPos = UserInputService:GetMouseLocation()
+                end
+                
+                local relativeX = math.clamp((inputPos.X - sliderPos.X) / sliderSize.X, 0, 1)
+                local value = minValue + (maxValue - minValue) * relativeX
+                
+                fill.Size = UDim2.new(relativeX, 0, 1, 0)
+                callback(value)
+                
+                if label then
+                    label.Text = string.format("%s: %.1f", label.Text:match("([^:]+)"), value)
+                end
             end
         end
-    end)
+    end
+    
+    -- Connect input events
+    slider.InputBegan:Connect(handleInput)
+    slider.InputEnded:Connect(handleInput)
+    
+    -- Handle touch movement
+    if isMobile then
+        UserInputService.TouchMoved:Connect(function(input)
+            if dragging and touchId and input == touchId then
+                handleInput(input)
+            end
+        end)
+    else
+        UserInputService.InputChanged:Connect(function(input)
+            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                handleInput(input)
+            end
+        end)
+    end
     
     -- Initialize
     local initialRatio = (currentValue - minValue) / (maxValue - minValue)
     fill.Size = UDim2.new(initialRatio, 0, 1, 0)
 end
 
--- Setup sliders
-setupSlider(
+-- Setup sliders with mobile compatibility
+setupMobileSlider(
     smoothnessSlider,
     smoothnessFill,
     smoothnessLabel,
@@ -337,7 +376,7 @@ setupSlider(
     function(value) smoothness = value end
 )
 
-setupSlider(
+setupMobileSlider(
     jumpOffsetSlider,
     jumpOffsetFill,
     jumpOffsetLabel,
@@ -365,6 +404,27 @@ lockButton.MouseButton1Click:Connect(function()
     
     updateUI()
 end)
+
+-- Make button respond to touch
+if isMobile then
+    lockButton.TouchLongPress:Connect(function()
+        isLocked = not isLocked
+        
+        if isLocked then
+            lockedPlayer = findBestTarget()
+            if lockedPlayer then
+                predictionHistory = {}
+                RunService:BindToRenderStep("CamLockUpdate", Enum.RenderPriority.Camera.Value + 1, updateCamLock)
+            else
+                isLocked = false
+            end
+        else
+            RunService:UnbindFromRenderStep("CamLockUpdate")
+        end
+        
+        updateUI()
+    end)
+end
 
 -- Cleanup when character changes
 player.CharacterAdded:Connect(function()
