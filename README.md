@@ -1,444 +1,428 @@
--- Services
-local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
-local TextService = game:GetService("TextService")
+--[[
+A distribution of https://wearedevs.net/scripts
+Created August 17, 2021, Last updated August 17, 2021
 
--- Player references
-local player = Players.LocalPlayer
-local camera = workspace.CurrentCamera
+Description: Draws boxes around each player.
 
--- Create main GUI
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "MobileCamLockUI"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = player:WaitForChild("PlayerGui")
+Credits to "Real Panda" for their ESP library
 
--- Main container frame
-local mainFrame = Instance.new("Frame")
-mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 220, 0, 160)
-mainFrame.Position = UDim2.new(0.02, 0, 0.7, 0)
-mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-mainFrame.BackgroundTransparency = 0.4
-mainFrame.Active = true
-mainFrame.Draggable = true
+Instruction: Edit the settings as desired below and execute the script.
 
-local mainCorner = Instance.new("UICorner")
-mainCorner.CornerRadius = UDim.new(0, 8)
-mainCorner.Parent = mainFrame
+Settings: 
+Replace "nil" with "true" to enable the setting, or "false" to disable the setting. Without the quotes. 
+If you do not change "nil", the defaults will take place.
+]]
+_G.WRDESPEnabled = true --Enables the ESP (Defaults to true)
+_G.WRDESPBoxes = true --Draws boxes around other players (Defaults to true)
+_G.WRDESPTeamColors = false --Distinguish different teams by their team color. If the game sets one. (Defaults to true)
+_G.WRDESPTracers = false --Displays lines leading to other players (Defaults to false)
+_G.WRDESPNames = false --Displays the names of the players within the ESP box (Defaults to true)
 
-local mainStroke = Instance.new("UIStroke")
-mainStroke.Color = Color3.fromRGB(80, 80, 80)
-mainStroke.Thickness = 1
-mainStroke.Parent = mainFrame
+--Dont edit below
 
--- Title label
-local titleLabel = Instance.new("TextLabel")
-titleLabel.Name = "TitleLabel"
-titleLabel.Size = UDim2.new(1, 0, 0, 30)
-titleLabel.Position = UDim2.new(0, 0, 0, 0)
-titleLabel.Text = "MOBILE CAM LOCK"
-titleLabel.TextColor3 = Color3.new(1, 1, 1)
-titleLabel.TextSize = 14
-titleLabel.Font = Enum.Font.GothamBold
-titleLabel.BackgroundTransparency = 1
-titleLabel.Parent = mainFrame
+--Only ever load the script once
+if not _G.WRDESPLoaded then    
+    ----[[ First- Load Kiriot ESP Library ]]----
 
--- Lock button (larger for mobile)
-local lockButton = Instance.new("TextButton")
-lockButton.Name = "LockButton"
-lockButton.Size = UDim2.new(0.9, 0, 0, 45) -- Bigger for touch
-lockButton.Position = UDim2.new(0.05, 0, 0.25, 0)
-lockButton.Text = "LOCK: OFF"
-lockButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-lockButton.TextColor3 = Color3.new(1, 1, 1)
-lockButton.TextSize = 14
-lockButton.TextWrapped = true
+    --Settings--
+    local ESP = {
+        Enabled = false,
+        Boxes = true,
+        BoxShift = CFrame.new(0,-1.5,0),
+        BoxSize = Vector3.new(4,6,0),
+        Color = Color3.fromRGB(255, 170, 0),
+        FaceCamera = false,
+        Names = true,
+        TeamColor = true,
+        Thickness = 2,
+        AttachShift = 1,
+        TeamMates = true,
+        Players = true,
+        
+        Objects = setmetatable({}, {__mode="kv"}),
+        Overrides = {}
+    }
 
-local lockCorner = Instance.new("UICorner")
-lockCorner.CornerRadius = UDim.new(0, 6)
-lockCorner.Parent = lockButton
+    --Declarations--
+    local cam = workspace.CurrentCamera
+    local plrs = game:GetService("Players")
+    local plr = plrs.LocalPlayer
+    local mouse = plr:GetMouse()
 
-local lockStroke = Instance.new("UIStroke")
-lockStroke.Color = Color3.fromRGB(100, 100, 100)
-lockStroke.Thickness = 1
-lockStroke.Parent = lockButton
-lockButton.Parent = mainFrame
+    local V3new = Vector3.new
+    local WorldToViewportPoint = cam.WorldToViewportPoint
 
--- Settings frame
-local settingsFrame = Instance.new("Frame")
-settingsFrame.Name = "SettingsFrame"
-settingsFrame.Size = UDim2.new(0.9, 0, 0, 70) -- Taller for mobile
-settingsFrame.Position = UDim2.new(0.05, 0, 0.55, 0)
-settingsFrame.BackgroundTransparency = 1
-settingsFrame.Parent = mainFrame
+    --Functions--
+    local function Draw(obj, props)
+        local new = Drawing.new(obj)
+        
+        props = props or {}
+        for i,v in pairs(props) do
+            new[i] = v
+        end
+        return new
+    end
 
--- Smoothness slider (mobile compatible)
-local smoothnessLabel = Instance.new("TextLabel")
-smoothnessLabel.Name = "SmoothnessLabel"
-smoothnessLabel.Size = UDim2.new(0.4, 0, 0, 20) -- Taller for touch
-smoothnessLabel.Position = UDim2.new(0, 0, 0, 0)
-smoothnessLabel.Text = "Smoothness: 0.3"
-smoothnessLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8)
-smoothnessLabel.TextSize = 12
-smoothnessLabel.Font = Enum.Font.Gotham
-smoothnessLabel.TextXAlignment = Enum.TextXAlignment.Left
-smoothnessLabel.BackgroundTransparency = 1
-smoothnessLabel.Parent = settingsFrame
+    function ESP:GetTeam(p)
+        local ov = self.Overrides.GetTeam
+        if ov then
+            return ov(p)
+        end
+        
+        return p and p.Team
+    end
 
-local smoothnessSlider = Instance.new("TextButton") -- Using TextButton for better touch
-smoothnessSlider.Name = "SmoothnessSlider"
-smoothnessSlider.Size = UDim2.new(1, 0, 0, 15) -- Taller for touch
-smoothnessSlider.Position = UDim2.new(0, 0, 0, 22)
-smoothnessSlider.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-smoothnessSlider.Text = ""
-smoothnessSlider.AutoButtonColor = false
+    function ESP:IsTeamMate(p)
+        local ov = self.Overrides.IsTeamMate
+        if ov then
+            return ov(p)
+        end
+        
+        return self:GetTeam(p) == self:GetTeam(plr)
+    end
 
-local smoothnessFill = Instance.new("Frame")
-smoothnessFill.Name = "Fill"
-smoothnessFill.Size = UDim2.new(0.3, 0, 1, 0)
-smoothnessFill.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-smoothnessFill.Parent = smoothnessSlider
+    function ESP:GetColor(obj)
+        local ov = self.Overrides.GetColor
+        if ov then
+            return ov(obj)
+        end
+        local p = self:GetPlrFromChar(obj)
+        return p and self.TeamColor and p.Team and p.Team.TeamColor.Color or self.Color
+    end
 
-local smoothnessCorner = Instance.new("UICorner")
-smoothnessCorner.CornerRadius = UDim.new(1, 0)
-smoothnessCorner.Parent = smoothnessSlider
-smoothnessSlider.Parent = settingsFrame
+    function ESP:GetPlrFromChar(char)
+        local ov = self.Overrides.GetPlrFromChar
+        if ov then
+            return ov(char)
+        end
+        
+        return plrs:GetPlayerFromCharacter(char)
+    end
 
--- Jump offset slider (mobile compatible)
-local jumpOffsetLabel = Instance.new("TextLabel")
-jumpOffsetLabel.Name = "JumpOffsetLabel"
-jumpOffsetLabel.Size = UDim2.new(0.4, 0, 0, 20) -- Taller for touch
-jumpOffsetLabel.Position = UDim2.new(0, 0, 0, 40)
-jumpOffsetLabel.Text = "Jump Offset: 1.5"
-jumpOffsetLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8)
-jumpOffsetLabel.TextSize = 12
-jumpOffsetLabel.Font = Enum.Font.Gotham
-jumpOffsetLabel.TextXAlignment = Enum.TextXAlignment.Left
-jumpOffsetLabel.BackgroundTransparency = 1
-jumpOffsetLabel.Parent = settingsFrame
-
-local jumpOffsetSlider = Instance.new("TextButton") -- Using TextButton for better touch
-jumpOffsetSlider.Name = "JumpOffsetSlider"
-jumpOffsetSlider.Size = UDim2.new(1, 0, 0, 15) -- Taller for touch
-jumpOffsetSlider.Position = UDim2.new(0, 0, 0, 62)
-jumpOffsetSlider.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-jumpOffsetSlider.Text = ""
-jumpOffsetSlider.AutoButtonColor = false
-
-local jumpOffsetFill = Instance.new("Frame")
-jumpOffsetFill.Name = "Fill"
-jumpOffsetFill.Size = UDim2.new(0.5, 0, 1, 0)
-jumpOffsetFill.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-jumpOffsetFill.Parent = jumpOffsetSlider
-
-local jumpOffsetCorner = Instance.new("UICorner")
-jumpOffsetCorner.CornerRadius = UDim.new(1, 0)
-jumpOffsetCorner.Parent = jumpOffsetSlider
-jumpOffsetSlider.Parent = settingsFrame
-
--- Prediction display
-local predictionFrame = Instance.new("Frame")
-predictionFrame.Name = "PredictionFrame"
-predictionFrame.Size = UDim2.new(0, 120, 0, 25) -- Larger for mobile
-predictionFrame.Position = UDim2.new(0.5, -60, 0.85, 0)
-predictionFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-predictionFrame.BackgroundTransparency = 0.5
-
-local predictionCorner = Instance.new("UICorner")
-predictionCorner.CornerRadius = UDim.new(0, 4)
-predictionCorner.Parent = predictionFrame
-
-local predictionLabel = Instance.new("TextLabel")
-predictionLabel.Name = "PredictionLabel"
-predictionLabel.Size = UDim2.new(1, 0, 1, 0)
-predictionLabel.Text = "PREDICTION: 0ms"
-predictionLabel.TextColor3 = Color3.new(1, 1, 1)
-predictionLabel.TextSize = 12
-predictionLabel.Font = Enum.Font.GothamBold
-predictionLabel.BackgroundTransparency = 1
-predictionLabel.Parent = predictionFrame
-predictionFrame.Parent = screenGui
-
-mainFrame.Parent = screenGui
-
--- Lock system variables
-local lockedPlayer = nil
-local isLocked = false
-local lockRange = 2000
-local smoothness = 0.3
-local jumpOffset = 1.5
-local predictionHistory = {}
-local maxPredictionHistory = 10
-
--- Mobile detection
-local isMobile = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
-local touchInputs = {}
-
--- Velocity prediction function
-local function predictPosition(targetRoot, dt)
-    if not targetRoot then return nil end
-    
-    -- Get current velocity
-    local velocity = targetRoot.AssemblyLinearVelocity
-    
-    -- Simple prediction: position + velocity * time
-    return targetRoot.Position + (velocity * dt)
-end
-
--- Enhanced target selection with prediction
-local function findBestTarget()
-    if not player.Character then return nil end
-    local root = player.Character:FindFirstChild("HumanoidRootPart")
-    if not root then return nil end
-    
-    local bestTarget = nil
-    local bestScore = -math.huge
-    
-    for _, otherPlayer in ipairs(Players:GetPlayers()) do
-        if otherPlayer ~= player and otherPlayer.Character then
-            local targetRoot = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
-            local humanoid = otherPlayer.Character:FindFirstChildOfClass("Humanoid")
-            
-            if targetRoot and humanoid then
-                local distance = (targetRoot.Position - root.Position).Magnitude
-                if distance <= lockRange then
-                    -- Calculate direction to target
-                    local direction = (targetRoot.Position - root.Position).Unit
-                    
-                    -- Calculate angle from camera view
-                    local viewAngle = math.deg(math.acos(camera.CFrame.LookVector:Dot(direction)))
-                    
-                    -- Calculate score (prioritize targets in center of screen and closer)
-                    local score = (1 - viewAngle/180) * 0.6 + (1 - distance/lockRange) * 0.4
-                    
-                    -- Slight bonus if target is moving
-                    if targetRoot.AssemblyLinearVelocity.Magnitude > 5 then
-                        score = score * 1.1
-                    end
-                    
-                    if score > bestScore then
-                        bestScore = score
-                        bestTarget = otherPlayer
+    function ESP:Toggle(bool)
+        self.Enabled = bool
+        if not bool then
+            for i,v in pairs(self.Objects) do
+                if v.Type == "Box" then --fov circle etc
+                    if v.Temporary then
+                        v:Remove()
+                    else
+                        for i,v in pairs(v.Components) do
+                            v.Visible = false
+                        end
                     end
                 end
             end
         end
     end
-    
-    return bestTarget
-end
 
--- Smooth camera lock with prediction and jump offset
-local function updateCamLock(dt)
-    if not isLocked or not lockedPlayer or not lockedPlayer.Character then return end
-    
-    local targetRoot = lockedPlayer.Character:FindFirstChild("HumanoidRootPart")
-    local humanoid = lockedPlayer.Character:FindFirstChildOfClass("Humanoid")
-    if not targetRoot or not humanoid then return end
-    
-    -- Calculate predicted position
-    local predictedPosition = predictPosition(targetRoot, dt)
-    if not predictedPosition then return end
-    
-    -- Apply jump offset (move camera up when target jumps)
-    local verticalOffset = 0
-    if humanoid.Jump then
-        verticalOffset = jumpOffset
+    function ESP:GetBox(obj)
+        return self.Objects[obj]
     end
-    
-    predictedPosition = predictedPosition + Vector3.new(0, verticalOffset, 0)
-    
-    -- Smooth camera movement
-    local currentCFrame = camera.CFrame
-    local currentPosition = currentCFrame.Position
-    local desiredLookVector = (predictedPosition - currentPosition).Unit
-    
-    -- Use spherical linear interpolation for smoother rotation
-    local newLookVector = currentCFrame.LookVector:Lerp(desiredLookVector, smoothness)
-    
-    -- Update camera
-    camera.CFrame = CFrame.new(currentPosition, currentPosition + newLookVector)
-    
-    -- Update prediction display
-    table.insert(predictionHistory, dt)
-    if #predictionHistory > maxPredictionHistory then
-        table.remove(predictionHistory, 1)
-    end
-    
-    local avgPrediction = 0
-    for _, val in ipairs(predictionHistory) do
-        avgPrediction = avgPrediction + val
-    end
-    avgPrediction = avgPrediction / #predictionHistory
-    
-    predictionLabel.Text = string.format("PREDICTION: %.1fms", avgPrediction * 1000)
-end
 
--- Update UI function
-local function updateUI()
-    if isLocked and lockedPlayer then
-        lockButton.Text = "LOCK: "..string.sub(lockedPlayer.Name, 1, 12)
-        lockButton.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-        lockStroke.Color = Color3.fromRGB(255, 80, 80)
-        
-        -- Pulse effect
-        local tweenInfo = TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
-        local tween = TweenService:Create(lockStroke, tweenInfo, {Thickness = 2})
-        tween:Play()
-    else
-        lockButton.Text = "LOCK: OFF"
-        lockButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        lockStroke.Color = Color3.fromRGB(100, 100, 100)
-        lockStroke.Thickness = 1
-    end
-end
-
--- Mobile-compatible slider function
-local function setupMobileSlider(slider, fill, label, minValue, maxValue, currentValue, callback)
-    local dragging = false
-    local touchId = nil
-    
-    -- Mouse/touch input handling
-    local function handleInput(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or 
-           input.UserInputType == Enum.UserInputType.Touch then
-            
-            if input.UserInputState == Enum.UserInputState.Begin then
-                dragging = true
-                if input.UserInputType == Enum.UserInputType.Touch then
-                    touchId = input
+    function ESP:AddObjectListener(parent, options)
+        local function NewListener(c)
+            if type(options.Type) == "string" and c:IsA(options.Type) or options.Type == nil then
+                if type(options.Name) == "string" and c.Name == options.Name or options.Name == nil then
+                    if not options.Validator or options.Validator(c) then
+                        local box = ESP:Add(c, {
+                            PrimaryPart = type(options.PrimaryPart) == "string" and c:WaitForChild(options.PrimaryPart) or type(options.PrimaryPart) == "function" and options.PrimaryPart(c),
+                            Color = type(options.Color) == "function" and options.Color(c) or options.Color,
+                            ColorDynamic = options.ColorDynamic,
+                            Name = type(options.CustomName) == "function" and options.CustomName(c) or options.CustomName,
+                            IsEnabled = options.IsEnabled,
+                            RenderInNil = options.RenderInNil
+                        })
+                        --TODO: add a better way of passing options
+                        if options.OnAdded then
+                            coroutine.wrap(options.OnAdded)(box)
+                        end
+                    end
                 end
-            elseif input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-                touchId = nil
             end
-            
-            if dragging then
-                local sliderPos = slider.AbsolutePosition
-                local sliderSize = slider.AbsoluteSize
-                
-                -- Get correct input position based on input type
-                local inputPos
-                if input.UserInputType == Enum.UserInputType.Touch then
-                    inputPos = input.Position
+        end
+
+        if options.Recursive then
+            parent.DescendantAdded:Connect(NewListener)
+            for i,v in pairs(parent:GetDescendants()) do
+                coroutine.wrap(NewListener)(v)
+            end
+        else
+            parent.ChildAdded:Connect(NewListener)
+            for i,v in pairs(parent:GetChildren()) do
+                coroutine.wrap(NewListener)(v)
+            end
+        end
+    end
+
+    local boxBase = {}
+    boxBase.__index = boxBase
+
+    function boxBase:Remove()
+        ESP.Objects[self.Object] = nil
+        for i,v in pairs(self.Components) do
+            v.Visible = false
+            v:Remove()
+            self.Components[i] = nil
+        end
+    end
+
+    function boxBase:Update()
+        if not self.PrimaryPart then
+            --warn("not supposed to print", self.Object)
+            return self:Remove()
+        end
+
+        local color
+        if ESP.Highlighted == self.Object then
+        color = ESP.HighlightColor
+        else
+            color = self.Color or self.ColorDynamic and self:ColorDynamic() or ESP:GetColor(self.Object) or ESP.Color
+        end
+
+        local allow = true
+        if ESP.Overrides.UpdateAllow and not ESP.Overrides.UpdateAllow(self) then
+            allow = false
+        end
+        if self.Player and not ESP.TeamMates and ESP:IsTeamMate(self.Player) then
+            allow = false
+        end
+        if self.Player and not ESP.Players then
+            allow = false
+        end
+        if self.IsEnabled and (type(self.IsEnabled) == "string" and not ESP[self.IsEnabled] or type(self.IsEnabled) == "function" and not self:IsEnabled()) then
+            allow = false
+        end
+        if not workspace:IsAncestorOf(self.PrimaryPart) and not self.RenderInNil then
+            allow = false
+        end
+
+        if not allow then
+            for i,v in pairs(self.Components) do
+                v.Visible = false
+            end
+            return
+        end
+
+        if ESP.Highlighted == self.Object then
+            color = ESP.HighlightColor
+        end
+
+        --calculations--
+        local cf = self.PrimaryPart.CFrame
+        if ESP.FaceCamera then
+            cf = CFrame.new(cf.p, cam.CFrame.p)
+        end
+        local size = self.Size
+        local locs = {
+            TopLeft = cf * ESP.BoxShift * CFrame.new(size.X/2,size.Y/2,0),
+            TopRight = cf * ESP.BoxShift * CFrame.new(-size.X/2,size.Y/2,0),
+            BottomLeft = cf * ESP.BoxShift * CFrame.new(size.X/2,-size.Y/2,0),
+            BottomRight = cf * ESP.BoxShift * CFrame.new(-size.X/2,-size.Y/2,0),
+            TagPos = cf * ESP.BoxShift * CFrame.new(0,size.Y/2,0),
+            Torso = cf * ESP.BoxShift
+        }
+
+        if ESP.Boxes then
+            local TopLeft, Vis1 = WorldToViewportPoint(cam, locs.TopLeft.p)
+            local TopRight, Vis2 = WorldToViewportPoint(cam, locs.TopRight.p)
+            local BottomLeft, Vis3 = WorldToViewportPoint(cam, locs.BottomLeft.p)
+            local BottomRight, Vis4 = WorldToViewportPoint(cam, locs.BottomRight.p)
+
+            if self.Components.Quad then
+                if Vis1 or Vis2 or Vis3 or Vis4 then
+                    self.Components.Quad.Visible = true
+                    self.Components.Quad.PointA = Vector2.new(TopRight.X, TopRight.Y)
+                    self.Components.Quad.PointB = Vector2.new(TopLeft.X, TopLeft.Y)
+                    self.Components.Quad.PointC = Vector2.new(BottomLeft.X, BottomLeft.Y)
+                    self.Components.Quad.PointD = Vector2.new(BottomRight.X, BottomRight.Y)
+                    self.Components.Quad.Color = color
                 else
-                    inputPos = UserInputService:GetMouseLocation()
-                end
-                
-                local relativeX = math.clamp((inputPos.X - sliderPos.X) / sliderSize.X, 0, 1)
-                local value = minValue + (maxValue - minValue) * relativeX
-                
-                fill.Size = UDim2.new(relativeX, 0, 1, 0)
-                callback(value)
-                
-                if label then
-                    label.Text = string.format("%s: %.1f", label.Text:match("([^:]+)"), value)
+                    self.Components.Quad.Visible = false
                 end
             end
-        end
-    end
-    
-    -- Connect input events
-    slider.InputBegan:Connect(handleInput)
-    slider.InputEnded:Connect(handleInput)
-    
-    -- Handle touch movement
-    if isMobile then
-        UserInputService.TouchMoved:Connect(function(input)
-            if dragging and touchId and input == touchId then
-                handleInput(input)
-            end
-        end)
-    else
-        UserInputService.InputChanged:Connect(function(input)
-            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-                handleInput(input)
-            end
-        end)
-    end
-    
-    -- Initialize
-    local initialRatio = (currentValue - minValue) / (maxValue - minValue)
-    fill.Size = UDim2.new(initialRatio, 0, 1, 0)
-end
-
--- Setup sliders with mobile compatibility
-setupMobileSlider(
-    smoothnessSlider,
-    smoothnessFill,
-    smoothnessLabel,
-    0.1, -- min
-    0.9, -- max
-    smoothness, -- current
-    function(value) smoothness = value end
-)
-
-setupMobileSlider(
-    jumpOffsetSlider,
-    jumpOffsetFill,
-    jumpOffsetLabel,
-    0.5, -- min
-    3.0, -- max
-    jumpOffset, -- current
-    function(value) jumpOffset = value end
-)
-
--- Toggle lock
-lockButton.MouseButton1Click:Connect(function()
-    isLocked = not isLocked
-    
-    if isLocked then
-        lockedPlayer = findBestTarget()
-        if lockedPlayer then
-            predictionHistory = {}
-            RunService:BindToRenderStep("CamLockUpdate", Enum.RenderPriority.Camera.Value + 1, updateCamLock)
         else
-            isLocked = false
+            self.Components.Quad.Visible = false
         end
-    else
-        RunService:UnbindFromRenderStep("CamLockUpdate")
-    end
-    
-    updateUI()
-end)
 
--- Make button respond to touch
-if isMobile then
-    lockButton.TouchLongPress:Connect(function()
-        isLocked = not isLocked
-        
-        if isLocked then
-            lockedPlayer = findBestTarget()
-            if lockedPlayer then
-                predictionHistory = {}
-                RunService:BindToRenderStep("CamLockUpdate", Enum.RenderPriority.Camera.Value + 1, updateCamLock)
+        if ESP.Names then
+            local TagPos, Vis5 = WorldToViewportPoint(cam, locs.TagPos.p)
+            
+            if Vis5 then
+                self.Components.Name.Visible = true
+                self.Components.Name.Position = Vector2.new(TagPos.X, TagPos.Y)
+                self.Components.Name.Text = self.Name
+                self.Components.Name.Color = color
+                
+                self.Components.Distance.Visible = true
+                self.Components.Distance.Position = Vector2.new(TagPos.X, TagPos.Y + 14)
+                self.Components.Distance.Text = math.floor((cam.CFrame.p - cf.p).magnitude) .."m away"
+                self.Components.Distance.Color = color
             else
-                isLocked = false
+                self.Components.Name.Visible = false
+                self.Components.Distance.Visible = false
             end
         else
-            RunService:UnbindFromRenderStep("CamLockUpdate")
+            self.Components.Name.Visible = false
+            self.Components.Distance.Visible = false
         end
         
-        updateUI()
+        if ESP.Tracers then
+            local TorsoPos, Vis6 = WorldToViewportPoint(cam, locs.Torso.p)
+
+            if Vis6 then
+                self.Components.Tracer.Visible = true
+                self.Components.Tracer.From = Vector2.new(TorsoPos.X, TorsoPos.Y)
+                self.Components.Tracer.To = Vector2.new(cam.ViewportSize.X/2,cam.ViewportSize.Y/ESP.AttachShift)
+                self.Components.Tracer.Color = color
+            else
+                self.Components.Tracer.Visible = false
+            end
+        else
+            self.Components.Tracer.Visible = false
+        end
+    end
+
+    function ESP:Add(obj, options)
+        if not obj.Parent and not options.RenderInNil then
+            return warn(obj, "has no parent")
+        end
+
+        local box = setmetatable({
+            Name = options.Name or obj.Name,
+            Type = "Box",
+            Color = options.Color --[[or self:GetColor(obj)]],
+            Size = options.Size or self.BoxSize,
+            Object = obj,
+            Player = options.Player or plrs:GetPlayerFromCharacter(obj),
+            PrimaryPart = options.PrimaryPart or obj.ClassName == "Model" and (obj.PrimaryPart or obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildWhichIsA("BasePart")) or obj:IsA("BasePart") and obj,
+            Components = {},
+            IsEnabled = options.IsEnabled,
+            Temporary = options.Temporary,
+            ColorDynamic = options.ColorDynamic,
+            RenderInNil = options.RenderInNil
+        }, boxBase)
+
+        if self:GetBox(obj) then
+            self:GetBox(obj):Remove()
+        end
+
+        box.Components["Quad"] = Draw("Quad", {
+            Thickness = self.Thickness,
+            Color = color,
+            Transparency = 1,
+            Filled = false,
+            Visible = self.Enabled and self.Boxes
+        })
+        box.Components["Name"] = Draw("Text", {
+            Text = box.Name,
+            Color = box.Color,
+            Center = true,
+            Outline = true,
+            Size = 19,
+            Visible = self.Enabled and self.Names
+        })
+        box.Components["Distance"] = Draw("Text", {
+            Color = box.Color,
+            Center = true,
+            Outline = true,
+            Size = 19,
+            Visible = self.Enabled and self.Names
+        })
+        
+        box.Components["Tracer"] = Draw("Line", {
+            Thickness = ESP.Thickness,
+            Color = box.Color,
+            Transparency = 1,
+            Visible = self.Enabled and self.Tracers
+        })
+        self.Objects[obj] = box
+        
+        obj.AncestryChanged:Connect(function(_, parent)
+            if parent == nil and ESP.AutoRemove ~= false then
+                box:Remove()
+            end
+        end)
+        obj:GetPropertyChangedSignal("Parent"):Connect(function()
+            if obj.Parent == nil and ESP.AutoRemove ~= false then
+                box:Remove()
+            end
+        end)
+
+        local hum = obj:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum.Died:Connect(function()
+                if ESP.AutoRemove ~= false then
+                    box:Remove()
+                end
+            end)
+        end
+
+        return box
+    end
+
+    local function CharAdded(char)
+        local p = plrs:GetPlayerFromCharacter(char)
+        if not char:FindFirstChild("HumanoidRootPart") then
+            local ev
+            ev = char.ChildAdded:Connect(function(c)
+                if c.Name == "HumanoidRootPart" then
+                    ev:Disconnect()
+                    ESP:Add(char, {
+                        Name = p.Name,
+                        Player = p,
+                        PrimaryPart = c
+                    })
+                end
+            end)
+        else
+            ESP:Add(char, {
+                Name = p.Name,
+                Player = p,
+                PrimaryPart = char.HumanoidRootPart
+            })
+        end
+    end
+    local function PlayerAdded(p)
+        p.CharacterAdded:Connect(CharAdded)
+        if p.Character then
+            coroutine.wrap(CharAdded)(p.Character)
+        end
+    end
+    plrs.PlayerAdded:Connect(PlayerAdded)
+    for i,v in pairs(plrs:GetPlayers()) do
+        if v ~= plr then
+            PlayerAdded(v)
+        end
+    end
+
+    game:GetService("RunService").RenderStepped:Connect(function()
+        cam = workspace.CurrentCamera
+        for i,v in (ESP.Enabled and pairs or ipairs)(ESP.Objects) do
+            if v.Update then
+                local s,e = pcall(v.Update, v)
+                if not s then warn("[EU]", e, v.Object:GetFullName()) end
+            end
+        end
     end)
+
+    ----[[ Now Begins WRD's modification for implementation ]]----
+
+    --Sets defaults where required
+    if _G.WRDESPEnabled == nil then _G.WRDESPEnabled = true end
+    if _G.WRDESPBoxes == nil then _G.WRDESPBoxes = true end
+    if _G.WRDESPTeamColors == nil then _G.WRDESPTeamColors = true end
+    if _G.WRDESPTracers == nil then _G.WRDESPTracers = false end
+    if _G.WRDESPNames == nil then _G.WRDESPNames = true end
+	
+	--Hacky way to keep up with setting changes
+    while wait(.1) do
+        ESP:Toggle(_G.WRDESPEnabled or false)
+        ESP.Boxes = _G.WRDESPBoxes or false
+        ESP.TeamColors = _G.WRDESPTeamColors or false
+        ESP.Tracers = _G.WRDESPTracers or false
+        ESP.Names = _G.WRDESPNames or false
+    end
+
+    _G.WRDESPLoaded = true
 end
-
--- Cleanup when character changes
-player.CharacterAdded:Connect(function()
-    if isLocked then
-        lockedPlayer = findBestTarget()
-        updateUI()
-    end
-end)
-
-player.CharacterRemoving:Connect(function()
-    if isLocked then
-        RunService:UnbindFromRenderStep("CamLockUpdate")
-    end
-end)
-
--- Initial UI update
-updateUI()
