@@ -1,7 +1,20 @@
+if game.CoreGui:FindFirstChild("MyScriptFlag") then
+    game.StarterGui:SetCore("SendNotification", {
+        Title = "Notice";
+        Text = "Already loaded 😐";
+        Duration = 3;
+    })
+    return
+end
+--AA
+local flag = Instance.new("BoolValue")
+flag.Name = "MyScriptFlag"
+flag.Parent = game.CoreGui
+--AA
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "screenGui"
 screenGui.Parent = game.CoreGui
-
+--AA
 local btn = Instance.new("TextButton")
 btn.Name = "textbutton"
 btn.Text = ("We are niggers")
@@ -14,26 +27,17 @@ btn.Font = Enum.Font.GothamBold
 btn.Parent = screenGui
 btn.Active = true
 btn.Draggable = true
-    
+--AA    
 local btncorner = Instance.new("UICorner")
 btncorner.CornerRadius = UDim.new(0, 10)
 btncorner.Parent = btn
-
+--AA
 btn.MouseButton1Click:Connect(function()
-    if not hasLoaded then
-        hasLoaded = true
-        -- Replace this with the actual safe code you want to run
-        loadstring(game:HttpGet("https://cdn.wearedevs.net/scripts/anti-afk%20via%20autofocus.txt"))()
-        game.StarterGui:SetCore("SendNotification", {
-            Title = "Success";
-            Text = "Script loaded!";
-            Duration = 3;
-        })
-    else
-        game.StarterGui:SetCore("SendNotification", {
-            Title = "Notice";
-            Text = "Already loaded 😐";
-            Duration = 3;
-        })
-    end
+        --AA
+    loadstring(game:HttpGet("https://cdn.wearedevs.net/scripts/anti-afk%20via%20autofocus.txt"))()
+    game.StarterGui:SetCore("SendNotification", {
+        Title = "Success";
+        Text = "Script loaded!";
+        Duration = 3;
+    })
 end)
