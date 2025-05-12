@@ -15,6 +15,13 @@ local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "screenGui"
 screenGui.Parent = game.CoreGui
 --AA
+print("Loaded successfully!") -- AA
+game.StarterGui:SetCore("SendNotification", {
+    Title = "Success";
+    Text = "Script loaded!";
+    Duration = 3;
+})
+--AA
 local btn = Instance.new("TextButton")
 btn.Name = "textbutton"
 btn.Text = ("We are niggers")
@@ -33,11 +40,5 @@ btncorner.CornerRadius = UDim.new(0, 10)
 btncorner.Parent = btn
 --AA
 btn.MouseButton1Click:Connect(function()
-        --AA
     loadstring(game:HttpGet("https://cdn.wearedevs.net/scripts/anti-afk%20via%20autofocus.txt"))()
-    game.StarterGui:SetCore("SendNotification", {
-        Title = "Success";
-        Text = "Script loaded!";
-        Duration = 3;
-    })
 end)
