@@ -10,7 +10,10 @@ btn.Position = UDim2.new(0, 30, 0, 30)
 btn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
 btn.TextColor3 = Color3.fromRGB(255, 255, 255)
 btn.TextScaled = true
+btn.Font = Enum.Font.GothamBold
 btn.Parent = screenGui
+btn.Active = true
+btn.Draggable = true
 btn.MouseButton1Click:Connect(function()
     loadstring(game:HttpGet("https://cdn.wearedevs.net/scripts/anti-afk%20via%20autofocus.txt"))()
 end)
