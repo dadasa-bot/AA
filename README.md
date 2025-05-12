@@ -14,10 +14,26 @@ btn.Font = Enum.Font.GothamBold
 btn.Parent = screenGui
 btn.Active = true
 btn.Draggable = true
-btn.MouseButton1Click:Connect(function()
-    loadstring(game:HttpGet("https://cdn.wearedevs.net/scripts/anti-afk%20via%20autofocus.txt"))()
-end)
     
 local btncorner = Instance.new("UICorner")
 btncorner.CornerRadius = UDim.new(0, 10)
 btncorner.Parent = btn
+
+btn.MouseButton1Click:Connect(function()
+    if not hasLoaded then
+        hasLoaded = true
+        -- Replace this with the actual safe code you want to run
+        loadstring(game:HttpGet("https://cdn.wearedevs.net/scripts/anti-afk%20via%20autofocus.txt"))()
+        game.StarterGui:SetCore("SendNotification", {
+            Title = "Success";
+            Text = "Script loaded!";
+            Duration = 3;
+        })
+    else
+        game.StarterGui:SetCore("SendNotification", {
+            Title = "Notice";
+            Text = "Already loaded 😐";
+            Duration = 3;
+        })
+    end
+end)
