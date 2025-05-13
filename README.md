@@ -1,68 +1,31 @@
--- Load Rayfield UI Library (working as of 2025)
-local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/REDzHUB/RayfieldLibrary/main/Rayfield.lua"))()
+-- Rayfield Revanced (working as of 2025)
+local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/cheesynob39/Rayfield-ReVanced/main/Source.lua"))()
 
--- Create the UI Window
+-- Create the window
 local Window = Rayfield:CreateWindow({
-   Name = "DevTools Hub",
-   LoadingTitle = "DevTools",
-   LoadingSubtitle = "by YourNameHere",
+   Name = "DevTools Revanced",
+   LoadingTitle = "Rayfield ReVanced",
+   LoadingSubtitle = "Custom GUI",
    ConfigurationSaving = {
       Enabled = true,
-      FolderName = "DevTools",
-      FileName = "DevToolsConfig"
+      FolderName = "DevToolsRev",
+      FileName = "RevConfig"
    },
    Discord = {
-      Enabled = false,
-      Invite = "",
-      RememberJoins = false
+      Enabled = false
    },
-   KeySystem = false,
-   KeySettings = {
-      Title = "Dev Key",
-      Subtitle = "Key System",
-      Note = "Ask the owner for the key.",
-      FileName = "DevKey",
-      SaveKey = true,
-      GrabKeyFromSite = false,
-      Key = "ABC123"
-   }
+   KeySystem = false
 })
 
 -- Create a tab
-local MainTab = Window:CreateTab("Main", 4483362458)
+local Tab = Window:CreateTab("Main", 4483362458)
 
--- Add UI elements
-MainTab:CreateButton({
-   Name = "Print Hello",
+-- Add a button
+Tab:CreateButton({
+   Name = "Print Something",
    Callback = function()
-      print("Hello, developer!")
+      print("Rayfield ReVanced is working!")
    end,
 })
 
-MainTab:CreateToggle({
-   Name = "Enable Feature",
-   CurrentValue = false,
-   Callback = function(Value)
-      print("Feature toggled:", Value)
-   end,
-})
-
-MainTab:CreateSlider({
-   Name = "Speed",
-   Range = {0, 100},
-   Increment = 1,
-   Suffix = "Speed",
-   CurrentValue = 50,
-   Callback = function(Value)
-      print("Speed set to:", Value)
-   end,
-})
-
-MainTab:CreateInput({
-   Name = "Enter Text",
-   PlaceholderText = "Type something...",
-   RemoveTextAfterFocusLost = false,
-   Callback = function(Text)
-      print("You typed:", Text)
-   end,
-})
+-- Add other UI elements as needed...
