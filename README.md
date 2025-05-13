@@ -1,7 +1,5 @@
--- Load Rayfield from Sirius
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
--- Create the main window
 local Window = Rayfield:CreateWindow({
    Name = "Rayfield Example Window",
    Icon = 0,
@@ -20,7 +18,7 @@ local Window = Rayfield:CreateWindow({
 
    Discord = {
       Enabled = true,
-      Invite = "https://discord.gg/MzhfAsME",
+      Invite = "MzhfAsME",
       RememberJoins = true
    },
 
@@ -36,21 +34,11 @@ local Window = Rayfield:CreateWindow({
    }
 })
 
--- 🧍 Player Tab with WalkSpeed Slider
-local PlayerTab = Window:CreateTab("Player", 0) -- You can use an icon ID here
+local PlayerTab = Window:CreateTab("Player", 0)
 
--- 🏃 WalkSpeed Slider
 PlayerTab:CreateSlider({
-   Name = "WalkSped",
-   Range = {16, 100}, -- Default Roblox walkspeed is 16
+   Name = "WalkSpeed",
+   Range = {16, 100},
    Increment = 1,
    Suffix = "Speed",
    CurrentValue = 100,
-   Flag = "WalkSpeedSlider",
-   Callback = function(Value)
-      local player = game.Players.LocalPlayer
-      if player and player.Character and player.Character:FindFirstChild("Humanoid") then
-         player.Character.Humanoid.WalkSpeed = Value
-      end
-   end,
-})
