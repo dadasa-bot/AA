@@ -19,14 +19,14 @@ local Window = Rayfield:CreateWindow({
    },
 
    Discord = {
-      Enabled = false,
-      Invite = "noinvitelink",
+      Enabled = true,
+      Invite = "https://discord.gg/MzhfAsME",
       RememberJoins = true
    },
 
-   KeySystem = false,
+   KeySystem = true,
    KeySettings = {
-      Title = "Untitled",
+      Title = "Key",
       Subtitle = "Key System",
       Note = "No method of obtaining the key is provided",
       FileName = "Key",
