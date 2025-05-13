@@ -1,31 +1,56 @@
--- Rayfield Revanced (working as of 2025)
-local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/cheesynob39/Rayfield-ReVanced/main/Source.lua"))()
+-- Load Rayfield from Sirius
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
--- Create the window
+-- Create the main window
 local Window = Rayfield:CreateWindow({
-   Name = "DevTools Revanced",
-   LoadingTitle = "Rayfield ReVanced",
-   LoadingSubtitle = "Custom GUI",
+   Name = "Rayfield Example Window",
+   Icon = 0,
+   LoadingTitle = "Rayfield Interface Suite",
+   LoadingSubtitle = "by Sirius",
+   Theme = "Light",
+
+   DisableRayfieldPrompts = false,
+   DisableBuildWarnings = false,
+
    ConfigurationSaving = {
       Enabled = true,
-      FolderName = "DevToolsRev",
-      FileName = "RevConfig"
+      FolderName = nil,
+      FileName = "Big Hub"
    },
+
    Discord = {
-      Enabled = false
+      Enabled = false,
+      Invite = "noinvitelink",
+      RememberJoins = true
    },
-   KeySystem = false
+
+   KeySystem = false,
+   KeySettings = {
+      Title = "Untitled",
+      Subtitle = "Key System",
+      Note = "No method of obtaining the key is provided",
+      FileName = "Key",
+      SaveKey = true,
+      GrabKeyFromSite = false,
+      Key = {"Hello"}
+   }
 })
 
--- Create a tab
-local Tab = Window:CreateTab("Main", 4483362458)
+-- 🧍 Player Tab with WalkSpeed Slider
+local PlayerTab = Window:CreateTab("Player", 0) -- You can use an icon ID here
 
--- Add a button
-Tab:CreateButton({
-   Name = "Print Something",
-   Callback = function()
-      print("Rayfield ReVanced is working!")
+-- 🏃 WalkSpeed Slider
+PlayerTab:CreateSlider({
+   Name = "WalkSpeed",
+   Range = {16, 100}, -- Default Roblox walkspeed is 16
+   Increment = 1,
+   Suffix = "Speed",
+   CurrentValue = 100,
+   Flag = "WalkSpeedSlider",
+   Callback = function(Value)
+      local player = game.Players.LocalPlayer
+      if player and player.Character and player.Character:FindFirstChild("Humanoid") then
+         player.Character.Humanoid.WalkSpeed = Value
+      end
    end,
 })
-
--- Add other UI elements as needed...
