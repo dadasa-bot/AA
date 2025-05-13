@@ -41,7 +41,7 @@ local PlayerTab = Window:CreateTab("Player", 0) -- You can use an icon ID here
 
 -- 🏃 WalkSpeed Slider
 PlayerTab:CreateSlider({
-   Name = "WalkSpeed",
+   Name = "WalkSped",
    Range = {16, 100}, -- Default Roblox walkspeed is 16
    Increment = 1,
    Suffix = "Speed",
