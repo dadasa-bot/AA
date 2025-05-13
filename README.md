@@ -1,5 +1,5 @@
--- Load Rayfield UI Library
-local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Rayfield/main/source"))()
+-- Load Rayfield UI Library (working as of 2025)
+local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/REDzHUB/RayfieldLibrary/main/Rayfield.lua"))()
 
 -- Create the UI Window
 local Window = Rayfield:CreateWindow({
@@ -8,15 +8,15 @@ local Window = Rayfield:CreateWindow({
    LoadingSubtitle = "by YourNameHere",
    ConfigurationSaving = {
       Enabled = true,
-      FolderName = "DevTools", -- Change this to your desired folder name
+      FolderName = "DevTools",
       FileName = "DevToolsConfig"
    },
    Discord = {
       Enabled = false,
-      Invite = "", -- Your Discord server invite (optional)
+      Invite = "",
       RememberJoins = false
    },
-   KeySystem = false, -- Change to true if you want a key system
+   KeySystem = false,
    KeySettings = {
       Title = "Dev Key",
       Subtitle = "Key System",
@@ -29,9 +29,9 @@ local Window = Rayfield:CreateWindow({
 })
 
 -- Create a tab
-local MainTab = Window:CreateTab("Main", 4483362458) -- Icon is optional
+local MainTab = Window:CreateTab("Main", 4483362458)
 
--- Add a button
+-- Add UI elements
 MainTab:CreateButton({
    Name = "Print Hello",
    Callback = function()
@@ -39,7 +39,6 @@ MainTab:CreateButton({
    end,
 })
 
--- Add a toggle
 MainTab:CreateToggle({
    Name = "Enable Feature",
    CurrentValue = false,
@@ -48,7 +47,6 @@ MainTab:CreateToggle({
    end,
 })
 
--- Add a slider
 MainTab:CreateSlider({
    Name = "Speed",
    Range = {0, 100},
@@ -60,7 +58,6 @@ MainTab:CreateSlider({
    end,
 })
 
--- Add an input
 MainTab:CreateInput({
    Name = "Enter Text",
    PlaceholderText = "Type something...",
