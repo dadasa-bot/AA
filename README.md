@@ -1,11 +1,10 @@
--- Load Rayfield (Delta-Compatible)
-local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/cheesynob39/Rayfield-ReVanced/main/Source.lua"))()
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
--- Create the main UI
 local Window = Rayfield:CreateWindow({
-   Name = "Mobile WalkSpeed GUI",
-   LoadingTitle = "Loading...",
-   LoadingSubtitle = "Delta Android Edition",
+   Name = "Rayfield Example Window",
+   Icon = 0,
+   LoadingTitle = "Rayfield Interface Suite",
+   LoadingSubtitle = "by Sirius",
    Theme = "Light",
 
    DisableRayfieldPrompts = false,
@@ -14,32 +13,42 @@ local Window = Rayfield:CreateWindow({
    ConfigurationSaving = {
       Enabled = true,
       FolderName = nil,
-      FileName = "WalkSpeedDelta"
+      FileName = "Big Hub"
    },
 
    Discord = {
-      Enabled = false -- Discord doesn't open on mobile executors anyway
+      Enabled = true,
+      Invite = "MzhfAsME",
+      RememberJoins = true
    },
 
-   KeySystem = false
+   KeySystem = true,
+   KeySettings = {
+      Title = "Key",
+      Subtitle = "Key System",
+      Note = "key is Hello",
+      FileName = "Key",
+      SaveKey = true,
+      GrabKeyFromSite = false,
+      Key = {"Hello"}
+   }
 })
 
--- Player Tab
 local PlayerTab = Window:CreateTab("Player", 0)
 
--- WalkSpeed Slider
 PlayerTab:CreateSlider({
    Name = "WalkSpeed",
    Range = {16, 100},
    Increment = 1,
    Suffix = "Speed",
-   CurrentValue = 16,
+   CurrentValue = 100,
+   Flag = "WalkSpeedSlider",
    Callback = function(Value)
-      local lp = game.Players.LocalPlayer
-      local char = lp.Character or lp.CharacterAdded:Wait()
-      local humanoid = char:WaitForChild("Humanoid", 5)
-      if humanoid then
-         humanoid.WalkSpeed = Value
+      local player = game.Players.LocalPlayer
+      if not player.Character or not player.Character:FindFirstChild("Humanoid") then
+         player.CharacterAdded:Wait()
+         repeat task.wait() until player.Character:FindFirstChild("Humanoid")
       end
-   end
+      player.Character.Humanoid.WalkSpeed = Value
+   end,
 })
