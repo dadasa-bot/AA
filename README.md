@@ -1,52 +1,62 @@
+-- Services
 local rs = game:GetService("RunService")
 local plrs = game:GetService("Players")
 local cg = game:GetService("CoreGui")
-local localPlayer = plrs.LocalPlayer
-local mouse = localPlayer:GetMouse()
+local lp = plrs.LocalPlayer
+local mouse = lp:GetMouse()
 
--- Create GUI
-local screenGui = Instance.new("ScreenGui", cg)
-screenGui.Name = "Google"
+-- GUI setup
+local gui = Instance.new("ScreenGui", cg)
+gui.Name = "MouseLockGUI"
 
-local btn = Instance.new("TextButton", screenGui)
-btn.Name = "btn"
-btn.Text = "EngineApi"
-btn.Size = UDim2.new(0, 120, 0, 40)
+local btn = Instance.new("TextButton", gui)
+btn.Size = UDim2.new(0, 200, 0, 40)
 btn.Position = UDim2.new(0, 30, 0, 30)
-btn.BackgroundColor3 = Color3.fromRGB(140, 40, 40)
-btn.TextColor3 = Color3.fromRGB(0, 0, 0)
-btn.TextScaled = true 
-btn.Font = Enum.Font.Arcade
-btn.Active = true
+btn.Text = "Start Mouse Targeting"
+btn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+btn.TextColor3 = Color3.new(1, 1, 1)
+btn.TextScaled = true
+btn.Font = Enum.Font.GothamBold
 btn.Draggable = true
+btn.Active = true
 
-local ui = Instance.new("UICorner", btn)
-ui.CornerRadius = UDim.new(0, 10)
+local corner = Instance.new("UICorner", btn)
+corner.CornerRadius = UDim.new(0, 10)
 
--- Button Click Function
+-- Toggle logic
+local detecting = false
+local conn
+
 btn.MouseButton1Click:Connect(function()
-    rs.Heartbeat:Connect(function()
-        local closestPlayer = nil
-        local shortestDistance = math.huge
+    detecting = not detecting
 
-        for _, player in pairs(plrs:GetPlayers()) do
-            if player ~= localPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                local dist = (player.Character.HumanoidRootPart.Position - localPlayer.Character.HumanoidRootPart.Position).Magnitude
-                if dist < shortestDistance then
-                    shortestDistance = dist
-                    closestPlayer = player
+    if detecting then
+        btn.Text = "Mouse Targeting On"
+        print("[MouseTarget] Started")
+
+        conn = rs.RenderStepped:Connect(function()
+            local target = mouse.Target
+            if target then
+                local model = target:FindFirstAncestorOfClass("Model")
+                local player = plrs:GetPlayerFromCharacter(model)
+
+                if player and player ~= lp and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+                    local dist = (lp.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
+                    btn.Text = "Locked: " .. player.Name .. " [" .. math.floor(dist) .. " studs]"
+                    print("[MouseTarget] Target:", player.Name)
+
+                    -- 🔧 Optional Camlock
+                    -- workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, player.Character.HumanoidRootPart.Position)
+                else
+                    btn.Text = "Not aiming at player"
                 end
+            else
+                btn.Text = "No target under mouse"
             end
-        end
-
-        if closestPlayer then
-            btn.Text = "Detected: " .. closestPlayer.Name
-            warn("Player Detected:", closestPlayer.Name)
-        else
-            btn.Text = "No Players Detected"
-            warn("No Players Detected")
-        end
-
-        task.wait(1)
-    end)
+        end)
+    else
+        btn.Text = "Start Mouse Targeting"
+        print("[MouseTarget] Stopped")
+        if conn then conn:Disconnect() end
+    end
 end)
