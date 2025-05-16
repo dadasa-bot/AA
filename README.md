@@ -1,54 +1,52 @@
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local rs = game:GetService("RunService")
+local plrs = game:GetService("Players")
+local cg = game:GetService("CoreGui")
+local localPlayer = plrs.LocalPlayer
+local mouse = localPlayer:GetMouse()
 
-local Window = Rayfield:CreateWindow({
-   Name = "Rayfield Example Window",
-   Icon = 0,
-   LoadingTitle = "Rayfield Interface Suite",
-   LoadingSubtitle = "by Sirius",
-   Theme = "Light",
+-- Create GUI
+local screenGui = Instance.new("ScreenGui", cg)
+screenGui.Name = "Google"
 
-   DisableRayfieldPrompts = false,
-   DisableBuildWarnings = false,
+local btn = Instance.new("TextButton", screenGui)
+btn.Name = "btn"
+btn.Text = "EngineApi"
+btn.Size = UDim2.new(0, 120, 0, 40)
+btn.Position = UDim2.new(0, 30, 0, 30)
+btn.BackgroundColor3 = Color3.fromRGB(140, 40, 40)
+btn.TextColor3 = Color3.fromRGB(0, 0, 0)
+btn.TextScaled = true 
+btn.Font = Enum.Font.Arcade
+btn.Active = true
+btn.Draggable = true
 
-   ConfigurationSaving = {
-      Enabled = true,
-      FolderName = nil,
-      FileName = "Big Hub"
-   },
+local ui = Instance.new("UICorner", btn)
+ui.CornerRadius = UDim.new(0, 10)
 
-   Discord = {
-      Enabled = true,
-      Invite = "MzhfAsME",
-      RememberJoins = true
-   },
+-- Button Click Function
+btn.MouseButton1Click:Connect(function()
+    rs.Heartbeat:Connect(function()
+        local closestPlayer = nil
+        local shortestDistance = math.huge
 
-   KeySystem = true,
-   KeySettings = {
-      Title = "Key",
-      Subtitle = "Key System",
-      Note = "key is Hello",
-      FileName = "Key",
-      SaveKey = true,
-      GrabKeyFromSite = false,
-      Key = {"Hello"}
-   }
-})
+        for _, player in pairs(plrs:GetPlayers()) do
+            if player ~= localPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local dist = (player.Character.HumanoidRootPart.Position - localPlayer.Character.HumanoidRootPart.Position).Magnitude
+                if dist < shortestDistance then
+                    shortestDistance = dist
+                    closestPlayer = player
+                end
+            end
+        end
 
-local PlayerTab = Window:CreateTab("Player", 0)
+        if closestPlayer then
+            btn.Text = "Detected: " .. closestPlayer.Name
+            warn("Player Detected:", closestPlayer.Name)
+        else
+            btn.Text = "No Players Detected"
+            warn("No Players Detected")
+        end
 
-PlayerTab:CreateSlider({
-   Name = "WalkSpeed",
-   Range = {16, 100},
-   Increment = 1,
-   Suffix = "Speed",
-   CurrentValue = 100,
-   Flag = "WalkSpeedSlider",
-   Callback = function(Value)
-      local player = game.Players.LocalPlayer
-      if not player.Character or not player.Character:FindFirstChild("Humanoid") then
-         player.CharacterAdded:Wait()
-         repeat task.wait() until player.Character:FindFirstChild("Humanoid")
-      end
-      player.Character.Humanoid.WalkSpeed = Value
-   end,
-})
+        task.wait(1)
+    end)
+end)
